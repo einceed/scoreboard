@@ -1,0 +1,81 @@
+<html>
+<head>
+    <script src="/webjars/sockjs-client/1.5.1/sockjs.js"></script>
+    <script src="/webjars/stomp-websocket/2.3.4/stomp.min.js"></script>
+    <script
+            src="https://code.jquery.com/jquery-3.6.0.min.js"
+            integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+            crossorigin="anonymous"></script>
+    <script type="text/javascript">
+
+        window.onload = function () {
+            updateEvents();
+        };
+
+        var socket = null;
+        var stompClient = null;
+
+        function connectTo() {
+            // token = document.getElementById("access-token").value;
+            eventId = document.getElementById("event-id").value;
+
+            socket = new SockJS('/ws');
+            stompClient = Stomp.over(socket);
+
+            stompClient.connect({
+                // 'Authorization': 'Bearer ' + token
+            }, function (frame) {
+                console.log("Сonnected...");
+                stompClient.subscribe('/event/' + eventId + '/notification', function (messageOutput) {
+                    console.log("Received...");
+                    document.getElementById("content-area").value = JSON.stringify(messageOutput.body, null, 2);
+                });
+            }, function error(msg) {
+                alert(msg);
+            });
+        }
+
+        function updateEvents() {
+            var select = document.getElementById("event-id");
+
+            // for (let i = 0; i < select.length; i++) {
+            //     select.remove(i);
+            // }
+
+            $("#event-id").empty();
+
+            var parsedJson;
+            $.get("/api/v1/events", function (data, status) {
+                parsedJson = data;
+                if (parsedJson == null) {
+                    return;
+                }
+                for (let i = 0; i < parsedJson.length; i++) {
+                    let obj = parsedJson[i];
+                    var option = document.createElement('option');
+                    option.text = obj.name;
+                    option.value = obj.id;
+                    select.add(option, i);
+
+                    console.log(obj.id);
+                }
+            });
+        }
+
+    </script>
+</head>
+<body>
+<div>
+</div>
+<div>
+    <div>Event ID:</div>
+    <select id="event-id" class="dropdown-content" style="width: 300px"></select>
+    <button onclick="updateEvents()" value="Update Events" title="Update Events">Update Events</button>
+</div>
+<div>
+    <button onclick="connectTo()" value="Connect" title="Connect">Connect to WS</button>
+</div>
+<textarea id="content-area" rows="10" cols="100">Nothing yet received</textarea>
+</body>
+</html>
+
